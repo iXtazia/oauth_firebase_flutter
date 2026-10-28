@@ -1,30 +1,33 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Key;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:oauth_firebase_flutter/app.dart';
+import 'package:oauth_firebase_flutter/data/repositories/article_repository.dart';
 
-import 'package:oauth_firebase_flutter/main.dart';
+import 'fakes.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('login screen -> Medium-style feed -> sign out', (tester) async {
+    final repo = FakeAuthRepository();
+    await tester.pumpWidget(
+      App(authRepository: repo, articleRepository: SampleArticleRepository()),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    // Auth stream has not emitted yet: spinner.
+    repo.emit(null);
     await tester.pump();
+    expect(find.text('Continue with Google'), findsOneWidget);
+    expect(find.text('Continue with Facebook'), findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('google_button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.text('Welcome back, Ada'), findsOneWidget);
+    expect(find.text('For you'), findsOneWidget);
+    expect(find.textContaining('MVVM'), findsWidgets);
+
+    repo.emit(null);
+    await tester.pump();
+    expect(find.text('Continue with Google'), findsOneWidget);
   });
 }
